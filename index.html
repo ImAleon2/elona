@@ -27,6 +27,10 @@
             --text-muted: #6d7d8e;
             --border-color: rgba(255, 255, 255, 0.05);
             --shadow-color: rgba(0, 0, 0, 0.7);
+            --success: #2ecc71;
+            --danger: #f5576c;
+            --warning: #f39c12;
+            --primary: #6c7bff;
         }
 
         .light-theme {
@@ -1399,6 +1403,10 @@
             color: #2ecc71;
         }
 
+        #callOverlay .call-status.incoming {
+            color: #f39c12;
+        }
+
         #callOverlay .call-timer {
             font-size: 20px;
             font-weight: 600;
@@ -1474,6 +1482,25 @@
             background: #f5576c;
         }
 
+        /* Incoming call accept/decline buttons */
+        #callOverlay .call-actions .call-accept {
+            background: #2ecc71;
+            color: #fff;
+        }
+
+        #callOverlay .call-actions .call-accept:hover {
+            background: #27ae60;
+        }
+
+        #callOverlay .call-actions .call-decline {
+            background: #f5576c;
+            color: #fff;
+        }
+
+        #callOverlay .call-actions .call-decline:hover {
+            background: #e0435a;
+        }
+
         /* ---------- TOAST ---------- */
         #toast-container {
             position: absolute;
@@ -1486,25 +1513,30 @@
             align-items: center;
             gap: 8px;
             pointer-events: none;
+            width: 90%;
+            max-width: 500px;
         }
 
         .toast {
             background: var(--bg-secondary);
             color: var(--text-primary);
-            padding: 12px 24px;
+            padding: 12px 20px;
             border-radius: 16px;
             box-shadow: 0 12px 40px var(--shadow-color);
             border: 1px solid var(--border-color);
             font-size: 14px;
-            animation: toastIn 0.3s ease, toastOut 0.3s ease 2.5s forwards;
+            animation: toastIn 0.3s ease, toastOut 0.3s ease 3s forwards;
             pointer-events: auto;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            width: 100%;
+            min-width: 280px;
         }
 
         .toast i {
             color: #6c7bff;
+            flex-shrink: 0;
         }
 
         .toast.error i {
@@ -1512,6 +1544,53 @@
         }
         .toast.success i {
             color: #2ecc71;
+        }
+        .toast.warning i {
+            color: #f39c12;
+        }
+
+        .toast .toast-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .toast .toast-actions button {
+            padding: 4px 14px;
+            border-radius: 10px;
+            border: none;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .toast .toast-actions .toast-accept {
+            background: #2ecc71;
+            color: #fff;
+        }
+
+        .toast .toast-actions .toast-accept:hover {
+            background: #27ae60;
+        }
+
+        .toast .toast-actions .toast-decline {
+            background: #f5576c;
+            color: #fff;
+        }
+
+        .toast .toast-actions .toast-decline:hover {
+            background: #e0435a;
+        }
+
+        .toast .toast-actions .toast-close {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            padding: 4px 10px;
+        }
+
+        .toast .toast-actions .toast-close:hover {
+            background: rgba(255, 255, 255, 0.2);
         }
 
         @keyframes toastIn {
@@ -1585,6 +1664,14 @@
             }
             #callOverlay .call-name {
                 font-size: 24px;
+            }
+            #toast-container {
+                bottom: 80px;
+            }
+            .toast {
+                min-width: unset;
+                font-size: 13px;
+                padding: 10px 16px;
             }
         }
 
@@ -1682,10 +1769,21 @@
                 height: 54px;
                 font-size: 20px;
             }
+            #toast-container {
+                bottom: 70px;
+            }
+            .toast {
+                font-size: 12px;
+                padding: 8px 14px;
+                flex-wrap: wrap;
+            }
+            .toast .toast-actions {
+                margin-left: auto;
+            }
         }
 
         @media (max-width: 480px) {
-            .sidebar-header .header-actions button {
+            .sidebar-header .right button {
                 width: 32px;
                 height: 32px;
                 font-size: 14px;
@@ -1699,6 +1797,14 @@
             }
             .emoji-picker .emoji-grid {
                 grid-template-columns: repeat(6, 1fr);
+            }
+            #callOverlay .call-actions {
+                gap: 14px;
+            }
+            #callOverlay .call-actions button {
+                width: 48px;
+                height: 48px;
+                font-size: 18px;
             }
         }
     </style>
@@ -1873,7 +1979,7 @@
                         </div>
                         <div class="settings-item" style="border-bottom: none; padding-bottom: 4px;">
                             <div class="left"><i class="fas fa-sign-out-alt" style="color: #f5576c;"></i> <span style="color: #f5576c;">Sign out</span></div>
-                            <div class="right"><span style="color: var(--text-muted); font-size: 13px;">v2.5.0</span></div>
+                            <div class="right"><span style="color: var(--text-muted); font-size: 13px;">v3.0.0</span></div>
                         </div>
                     </div>
                 </div>
@@ -1905,7 +2011,7 @@
                         <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 8px;">Enter the username of the person you want to chat with.</p>
                         <div class="add-contact-input-group">
                             <input type="text" id="addContactInput" placeholder="Username" />
-                            <button id="searchContactBtn">Search</button>
+                            <button id="searchContactBtn">Send Request</button>
                         </div>
                         <div class="add-contact-result" id="addContactResult"></div>
                     </div>
@@ -1917,10 +2023,8 @@
                     <div class="call-name" id="callName">John Doe</div>
                     <div class="call-status" id="callStatus">Connecting...</div>
                     <div class="call-timer" id="callTimer">00:00</div>
-                    <div class="call-actions">
-                        <button class="call-video-toggle" id="callVideoToggle" title="Toggle video"><i class="fas fa-video"></i></button>
-                        <button class="call-mute" id="callMuteBtn" title="Mute"><i class="fas fa-microphone"></i></button>
-                        <button class="call-end" id="callEndBtn" title="End call"><i class="fas fa-phone-slash"></i></button>
+                    <div class="call-actions" id="callActions">
+                        <!-- Dynamic buttons inserted by JS -->
                     </div>
                 </div>
 
@@ -1958,6 +2062,8 @@
         let isMuted = false;
         let isVideoOn = true;
         let callInProgress = false;
+        let callDirection = null; // 'outgoing' or 'incoming'
+        let callTarget = null;
 
         // ============================================================
         //  DOM REFS
@@ -2034,9 +2140,7 @@
         const callName = document.getElementById('callName');
         const callStatus = document.getElementById('callStatus');
         const callTimer = document.getElementById('callTimer');
-        const callMuteBtn = document.getElementById('callMuteBtn');
-        const callEndBtn = document.getElementById('callEndBtn');
-        const callVideoToggle = document.getElementById('callVideoToggle');
+        const callActions = document.getElementById('callActions');
 
         const toastContainer = document.getElementById('toast-container');
 
@@ -2074,7 +2178,7 @@
         }];
 
         // ============================================================
-        //  API HELPER (relative paths)
+        //  API HELPER
         // ============================================================
         async function apiCall(endpoint, method = 'GET', body = null) {
             const options = {
@@ -2091,20 +2195,53 @@
         // ============================================================
         //  TOAST SYSTEM
         // ============================================================
-        function showToast(message, type = 'info') {
+        function showToast(message, type = 'info', actions = null, duration = 3000) {
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             const iconMap = {
                 info: 'fa-info-circle',
                 success: 'fa-check-circle',
-                error: 'fa-exclamation-circle'
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle'
             };
             const icon = iconMap[type] || 'fa-info-circle';
-            toast.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+            let actionsHtml = '';
+            if (actions) {
+                actionsHtml = '<div class="toast-actions">';
+                actions.forEach(action => {
+                    actionsHtml += `<button class="${action.class}" data-action="${action.id}">${action.label}</button>`;
+                });
+                actionsHtml += '</div>';
+            }
+            toast.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span> ${actionsHtml}`;
             toastContainer.appendChild(toast);
-            setTimeout(() => {
-                if (toast.parentNode) toast.remove();
-            }, 3000);
+
+            // Event listeners for actions
+            if (actions) {
+                toast.querySelectorAll('[data-action]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const actionId = btn.dataset.action;
+                        const action = actions.find(a => a.id === actionId);
+                        if (action && action.handler) action.handler(e);
+                        // Remove toast after action
+                        setTimeout(() => {
+                            if (toast.parentNode) toast.remove();
+                        }, 300);
+                    });
+                });
+            }
+
+            // Auto-remove after duration (only if no actions or if we want it to stay)
+            if (duration > 0) {
+                setTimeout(() => {
+                    if (toast.parentNode) toast.remove();
+                }, duration);
+            }
+            return toast;
+        }
+
+        function showToastWithActions(message, type, actions, duration = 8000) {
+            return showToast(message, type, actions, duration);
         }
 
         // ============================================================
@@ -2167,6 +2304,50 @@
         // ============================================================
         //  CALL SYSTEM
         // ============================================================
+        function renderCallActions() {
+            const isIncoming = callDirection === 'incoming';
+            const isConnected = isCallActive;
+
+            let html = '';
+            if (isIncoming && !isConnected) {
+                // Incoming call - show Accept/Decline
+                html = `
+                    <button class="call-accept" id="callAcceptBtn" title="Accept call"><i class="fas fa-phone"></i></button>
+                    <button class="call-decline" id="callDeclineBtn" title="Decline call"><i class="fas fa-phone-slash"></i></button>
+                `;
+            } else if (isConnected) {
+                // Active call - show controls
+                html = `
+                    <button class="call-video-toggle ${isVideoOn ? '' : 'off'}" id="callVideoToggle" title="Toggle video">
+                        <i class="fas ${isVideoOn ? 'fa-video' : 'fa-video-slash'}"></i>
+                    </button>
+                    <button class="call-mute ${isMuted ? 'muted' : ''}" id="callMuteBtn" title="Mute">
+                        <i class="fas ${isMuted ? 'fa-microphone-slash' : 'fa-microphone'}"></i>
+                    </button>
+                    <button class="call-end" id="callEndBtn" title="End call"><i class="fas fa-phone-slash"></i></button>
+                `;
+            } else {
+                // Outgoing call - show cancel
+                html = `
+                    <button class="call-decline" id="callCancelBtn" title="Cancel call"><i class="fas fa-phone-slash"></i></button>
+                `;
+            }
+
+            callActions.innerHTML = html;
+
+            // Bind events
+            if (isIncoming && !isConnected) {
+                document.getElementById('callAcceptBtn')?.addEventListener('click', acceptCall);
+                document.getElementById('callDeclineBtn')?.addEventListener('click', declineCall);
+            } else if (isConnected) {
+                document.getElementById('callVideoToggle')?.addEventListener('click', toggleVideo);
+                document.getElementById('callMuteBtn')?.addEventListener('click', toggleMute);
+                document.getElementById('callEndBtn')?.addEventListener('click', endCall);
+            } else if (!isIncoming && !isConnected) {
+                document.getElementById('callCancelBtn')?.addEventListener('click', endCall);
+            }
+        }
+
         function startCall(contactId, isVideo = false) {
             if (callInProgress) {
                 showToast('A call is already in progress.', 'error');
@@ -2187,6 +2368,9 @@
             isCallActive = false;
             isMuted = false;
             isVideoOn = isVideo;
+            callDirection = 'outgoing';
+            callTarget = contactId;
+
             if (callTimerInterval) {
                 clearInterval(callTimerInterval);
                 callTimerInterval = null;
@@ -2198,30 +2382,52 @@
             callAvatar.textContent = contact.substring(0, 2).toUpperCase();
             callAvatar.style.background = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
             callName.textContent = contact;
-            callStatus.textContent = 'Connecting...';
+            callStatus.textContent = isVideo ? 'Calling...' : 'Calling...';
             callStatus.className = 'call-status';
-            callMuteBtn.classList.remove('muted');
-            callMuteBtn.innerHTML = '<i class="fas fa-microphone"></i>';
-            callVideoToggle.classList.remove('off');
-            callVideoToggle.innerHTML = isVideo ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
-            if (!isVideo) callVideoToggle.classList.add('off');
-
             callOverlay.classList.add('open');
+            renderCallActions();
 
-            // Simulate connection after 1.5-2.5 seconds
-            const connectDelay = 1500 + Math.random() * 1000;
-            const connectTimeout = setTimeout(() => {
-                if (callOverlay.classList.contains('open')) {
-                    isCallActive = true;
-                    callStatus.textContent = isVideo ? 'Video call' : 'Voice call';
-                    callStatus.classList.add('connected');
-                    startCallTimer();
-                    showToast(`Call connected with ${contact}`, 'success');
+            // Send call initiation to server
+            if (socket) {
+                socket.emit('initiate_call', { from: currentUser.username, to: contactId, type: isVideo ? 'video' : 'voice' });
+            }
+
+            // Show toast notification
+            showToast(`Calling ${contact}...`, 'info');
+
+            // Auto-cancel after 30 seconds if not answered
+            setTimeout(() => {
+                if (callInProgress && !isCallActive) {
+                    endCall();
+                    showToast('Call timed out (no answer)', 'warning');
                 }
-            }, connectDelay);
+            }, 30000);
+        }
 
-            // Store timeout to clear if call ends early
-            callEndBtn._connectTimeout = connectTimeout;
+        function acceptCall() {
+            if (callInProgress && callDirection === 'incoming' && !isCallActive) {
+                isCallActive = true;
+                callStatus.textContent = 'Connected';
+                callStatus.className = 'call-status connected';
+                startCallTimer();
+                renderCallActions();
+
+                // Notify server
+                if (socket) {
+                    socket.emit('accept_call', { from: currentUser.username, to: callTarget });
+                }
+                showToast('Call connected!', 'success');
+            }
+        }
+
+        function declineCall() {
+            if (callInProgress && callDirection === 'incoming') {
+                if (socket) {
+                    socket.emit('decline_call', { from: currentUser.username, to: callTarget });
+                }
+                endCall();
+                showToast('Call declined', 'info');
+            }
         }
 
         function startCallTimer() {
@@ -2239,13 +2445,16 @@
                 clearInterval(callTimerInterval);
                 callTimerInterval = null;
             }
-            // Clear connection timeout if still pending
-            if (callEndBtn._connectTimeout) {
-                clearTimeout(callEndBtn._connectTimeout);
-                callEndBtn._connectTimeout = null;
+            if (callInProgress && isCallActive) {
+                // Notify the other party
+                if (socket && callTarget) {
+                    socket.emit('end_call', { from: currentUser.username, to: callTarget });
+                }
             }
             isCallActive = false;
             callInProgress = false;
+            callDirection = null;
+            callTarget = null;
             callOverlay.classList.remove('open');
             showToast('Call ended', 'info');
         }
@@ -2256,8 +2465,10 @@
                 return;
             }
             isMuted = !isMuted;
-            callMuteBtn.classList.toggle('muted', isMuted);
-            callMuteBtn.innerHTML = isMuted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
+            if (socket && callTarget) {
+                socket.emit('call_mute_toggle', { from: currentUser.username, to: callTarget, muted: isMuted });
+            }
+            renderCallActions();
             showToast(isMuted ? 'Microphone muted' : 'Microphone unmuted', 'info');
         }
 
@@ -2267,8 +2478,10 @@
                 return;
             }
             isVideoOn = !isVideoOn;
-            callVideoToggle.classList.toggle('off', !isVideoOn);
-            callVideoToggle.innerHTML = isVideoOn ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+            if (socket && callTarget) {
+                socket.emit('call_video_toggle', { from: currentUser.username, to: callTarget, videoOn: isVideoOn });
+            }
+            renderCallActions();
             showToast(isVideoOn ? 'Video enabled' : 'Video disabled', 'info');
         }
 
@@ -2311,6 +2524,9 @@
             try {
                 if (isAuthMode === 'register') {
                     await apiCall('/api/register', 'POST', { username, password });
+                    showToast('Account created! Please login.', 'success');
+                    setAuthMode('login');
+                    return;
                 }
                 await apiCall('/api/login', 'POST', { username, password });
                 currentUser = { username };
@@ -2349,22 +2565,187 @@
                 console.log('Socket connected');
                 socket.emit('join', username);
             });
+
+            // ---------- Friend Requests ----------
+            socket.on('pending_requests', (requests) => {
+                requests.forEach(requester => {
+                    showFriendRequestToast(requester);
+                });
+            });
+
+            socket.on('friend_request', (data) => {
+                showFriendRequestToast(data.from);
+            });
+
+            socket.on('friend_request_accepted', (data) => {
+                if (data.requester) {
+                    showToast(`${data.requester} accepted your friend request!`, 'success');
+                } else if (data.by) {
+                    showToast(`${data.by} accepted your friend request!`, 'success');
+                }
+                loadUserData().then(() => {
+                    renderContacts(searchInput.value);
+                    if (activeContactId) loadChat(activeContactId);
+                });
+            });
+
+            socket.on('friend_request_declined', (data) => {
+                showToast(`${data.by} declined your friend request.`, 'warning');
+            });
+
+            socket.on('friend_request_error', (data) => {
+                showToast(data.message, 'error');
+            });
+
+            socket.on('contacts_updated', () => {
+                loadUserData().then(() => renderContacts(searchInput.value));
+            });
+
+            // ---------- Messages ----------
             socket.on('new_message', (data) => {
                 if (data.from === activeContactId) {
                     currentMessages.push(data.message);
                     renderMessages();
                     scrollToBottom();
-                    if (settings.notifications) {
-                        showToast(`New message from ${data.from}`, 'info');
-                    }
+                }
+                if (settings.notifications && data.from !== activeContactId) {
+                    showToast(`New message from ${data.from}`, 'info');
                 }
                 loadUserData().then(() => {
                     renderContacts(searchInput.value);
                 });
             });
+
+            socket.on('message_sent', (data) => {
+                // Message sent confirmation
+            });
+
+            // ---------- Chat Clear ----------
+            socket.on('chat_cleared', (data) => {
+                if (data.contactId === activeContactId) {
+                    currentMessages = [];
+                    renderMessages();
+                    showToast('Chat cleared', 'info');
+                }
+                loadUserData().then(() => renderContacts(searchInput.value));
+            });
+
+            // ---------- Call Signaling ----------
+            socket.on('incoming_call', (data) => {
+                if (callInProgress) {
+                    // Decline if busy
+                    socket.emit('decline_call', { from: currentUser.username, to: data.from });
+                    return;
+                }
+                const { from, type } = data;
+                callInProgress = true;
+                isCallActive = false;
+                callDirection = 'incoming';
+                callTarget = from;
+
+                callAvatar.textContent = from.substring(0, 2).toUpperCase();
+                callAvatar.style.background = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+                callName.textContent = from;
+                callStatus.textContent = type === 'video' ? 'Incoming Video Call...' : 'Incoming Voice Call...';
+                callStatus.className = 'call-status incoming';
+                callTimer.textContent = '00:00';
+                callOverlay.classList.add('open');
+                renderCallActions();
+
+                // Auto-decline after 30 seconds
+                setTimeout(() => {
+                    if (callInProgress && !isCallActive && callDirection === 'incoming') {
+                        declineCall();
+                    }
+                }, 30000);
+            });
+
+            socket.on('call_accepted', (data) => {
+                if (callDirection === 'outgoing') {
+                    isCallActive = true;
+                    callStatus.textContent = 'Connected';
+                    callStatus.className = 'call-status connected';
+                    startCallTimer();
+                    renderCallActions();
+                    showToast('Call connected!', 'success');
+                }
+            });
+
+            socket.on('call_declined', (data) => {
+                if (callDirection === 'outgoing') {
+                    endCall();
+                    showToast(`${data.by} declined the call.`, 'warning');
+                }
+            });
+
+            socket.on('call_connected', (data) => {
+                // Call is connected on both ends
+                if (callDirection === 'incoming') {
+                    isCallActive = true;
+                    callStatus.textContent = 'Connected';
+                    callStatus.className = 'call-status connected';
+                    startCallTimer();
+                    renderCallActions();
+                }
+            });
+
+            socket.on('call_ended', (data) => {
+                if (callInProgress) {
+                    endCall();
+                    showToast(`${data.by} ended the call.`, 'info');
+                }
+            });
+
+            socket.on('call_mute_toggled', (data) => {
+                if (callDirection === 'incoming') {
+                    showToast(`${data.from} ${data.muted ? 'muted' : 'unmuted'} their microphone`, 'info');
+                }
+            });
+
+            socket.on('call_video_toggled', (data) => {
+                if (callDirection === 'incoming') {
+                    showToast(`${data.from} ${data.videoOn ? 'enabled' : 'disabled'} their video`, 'info');
+                }
+            });
+
+            socket.on('call_error', (data) => {
+                showToast(data.message, 'error');
+                if (callInProgress) endCall();
+            });
+
             socket.on('disconnect', () => {
                 console.log('Socket disconnected');
             });
+        }
+
+        // ============================================================
+        //  FRIEND REQUEST TOAST
+        // ============================================================
+        function showFriendRequestToast(from) {
+            const actions = [
+                {
+                    id: 'accept',
+                    label: 'Accept',
+                    class: 'toast-accept',
+                    handler: () => {
+                        if (socket) {
+                            socket.emit('accept_friend_request', { username: currentUser.username, requester: from });
+                        }
+                    }
+                },
+                {
+                    id: 'decline',
+                    label: 'Decline',
+                    class: 'toast-decline',
+                    handler: () => {
+                        if (socket) {
+                            socket.emit('decline_friend_request', { username: currentUser.username, requester: from });
+                            showToast(`Declined friend request from ${from}`, 'info');
+                        }
+                    }
+                }
+            ];
+            showToastWithActions(`Friend request from ${from}`, 'warning', actions, 15000);
         }
 
         // ============================================================
@@ -2442,7 +2823,7 @@
                         </div>
                         <div class="info">
                             <div class="name">${contact}</div>
-                            <div class="preview">${'Chat started'}</div>
+                            <div class="preview">${currentUser.chats?.[contact]?.length > 0 ? 'Last message' : 'Start chatting'}</div>
                         </div>
                         <div class="meta">
                             <span class="time"></span>
@@ -2577,9 +2958,6 @@
                 currentMessages.push(optimisticMsg);
                 renderMessages();
                 scrollToBottom();
-                if (settings.sound) {
-                    // Optional: play a sound effect
-                }
             } else {
                 apiCall('/api/messages/send', 'POST', messageData)
                     .then(() => loadChat(activeContactId))
@@ -2742,19 +3120,21 @@
                 showAddContactResult('Please enter a username.', 'error');
                 return;
             }
+            if (username === currentUser.username) {
+                showAddContactResult('You cannot add yourself.', 'error');
+                return;
+            }
             try {
-                await apiCall('/api/contacts/add', 'POST', {
-                    username: currentUser.username,
-                    contact: username
-                });
-                showAddContactResult(`${username} added successfully!`, 'success');
-                await loadUserData();
-                renderContacts(searchInput.value);
-                setTimeout(() => {
-                    closeAddContact();
-                    addContactResult.classList.remove('show');
-                }, 1200);
-                showToast(`${username} added to your contacts`, 'success');
+                if (socket) {
+                    socket.emit('send_friend_request', { from: currentUser.username, to: username });
+                    showAddContactResult(`Friend request sent to ${username}!`, 'success');
+                    setTimeout(() => {
+                        closeAddContact();
+                        addContactResult.classList.remove('show');
+                    }, 1500);
+                } else {
+                    showAddContactResult('Not connected to server.', 'error');
+                }
             } catch (err) {
                 showAddContactResult(err.message, 'error');
             }
@@ -2793,10 +3173,10 @@
                 switch (action) {
                     case 'clear':
                         if (confirm(`Clear all messages with ${contact}?`)) {
-                            if (activeContactId) {
+                            if (activeContactId && socket) {
+                                socket.emit('clear_chat', { username: currentUser.username, contactId: activeContactId });
                                 currentMessages = [];
                                 renderMessages();
-                                loadChat(activeContactId);
                                 showToast('Chat cleared', 'success');
                             }
                         }
@@ -2834,15 +3214,6 @@
             } else {
                 showToast('Select a contact first.', 'error');
             }
-        });
-
-        callEndBtn.addEventListener('click', endCall);
-        callMuteBtn.addEventListener('click', toggleMute);
-        callVideoToggle.addEventListener('click', toggleVideo);
-
-        // Close call if overlay background clicked
-        callOverlay.addEventListener('click', (e) => {
-            if (e.target === callOverlay) endCall();
         });
 
         // ============================================================
@@ -2965,7 +3336,7 @@
         showAuthScreen();
         setAuthMode('login');
 
-        console.log('🚀 ChatVerse client ready for Render!');
+        console.log('🚀 ChatVerse v3.0 - Complete real-time messaging with friend requests & calls!');
     </script>
 </body>
 </html>
