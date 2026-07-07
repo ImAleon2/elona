@@ -130,6 +130,11 @@ io.on('connection', (socket) => {
     const sender = db.users[from];
     const receiver = db.users[to];
     if (!sender || !receiver) return;
+    // Check if they are contacts
+    if (!sender.contacts.includes(to) || !receiver.contacts.includes(from)) {
+      io.to(from).emit('friend_request_error', { message: 'Not a contact' });
+      return;
+    }
 
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const msg = { from: 'me', text, file, time: now };
@@ -157,6 +162,9 @@ io.on('connection', (socket) => {
 
     io.to(username).emit('chat_cleared', { contactId });
     io.to(contactId).emit('chat_cleared', { contactId: username });
+    // Refresh contact lists so previews update
+    io.to(username).emit('contacts_updated');
+    io.to(contactId).emit('contacts_updated');
   });
 
   // ---------- CALL SIGNALING ----------
@@ -206,7 +214,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     if (currentUser) {
       console.log(`${currentUser} disconnected`);
-      // Notify contacts? Could add presence later.
+      // Optionally notify contacts of offline status
     }
   });
 });
