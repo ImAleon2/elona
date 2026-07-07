@@ -1349,13 +1349,14 @@
             position: absolute;
             inset: 0;
             z-index: 300;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
             border-radius: 32px;
             justify-content: center;
             align-items: center;
             flex-direction: column;
             color: #fff;
+            transition: opacity 0.3s;
         }
 
         #callOverlay.open {
@@ -1373,6 +1374,12 @@
             font-size: 48px;
             font-weight: 700;
             margin-bottom: 24px;
+            box-shadow: 0 12px 40px rgba(108, 123, 255, 0.3);
+            transition: transform 0.3s;
+        }
+
+        #callOverlay .call-avatar:hover {
+            transform: scale(1.05);
         }
 
         #callOverlay .call-name {
@@ -1385,6 +1392,11 @@
             font-size: 16px;
             color: #a0b0c0;
             margin-bottom: 32px;
+            transition: color 0.3s;
+        }
+
+        #callOverlay .call-status.connected {
+            color: #2ecc71;
         }
 
         #callOverlay .call-timer {
@@ -1393,6 +1405,8 @@
             color: #a0b0c0;
             margin-bottom: 32px;
             font-variant-numeric: tabular-nums;
+            min-width: 60px;
+            text-align: center;
         }
 
         #callOverlay .call-actions {
@@ -1407,10 +1421,18 @@
             border: none;
             font-size: 24px;
             cursor: pointer;
-            transition: 0.2s;
+            transition: 0.25s ease;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        #callOverlay .call-actions button:hover {
+            transform: scale(1.08);
+        }
+        #callOverlay .call-actions button:active {
+            transform: scale(0.92);
         }
 
         #callOverlay .call-actions .call-end {
@@ -1419,20 +1441,36 @@
         }
 
         #callOverlay .call-actions .call-end:hover {
-            transform: scale(1.05);
             background: #e0435a;
         }
 
         #callOverlay .call-actions .call-mute {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15);
             color: #fff;
         }
 
         #callOverlay .call-actions .call-mute:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.25);
         }
 
         #callOverlay .call-actions .call-mute.muted {
+            background: #f5576c;
+        }
+
+        #callOverlay .call-actions .call-mute.muted:hover {
+            background: #e0435a;
+        }
+
+        #callOverlay .call-actions .call-video-toggle {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
+
+        #callOverlay .call-actions .call-video-toggle:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        #callOverlay .call-actions .call-video-toggle.off {
             background: #f5576c;
         }
 
@@ -1540,6 +1578,14 @@
             .auth-card {
                 padding: 28px 24px;
             }
+            #callOverlay .call-avatar {
+                width: 100px;
+                height: 100px;
+                font-size: 40px;
+            }
+            #callOverlay .call-name {
+                font-size: 24px;
+            }
         }
 
         @media (max-width: 600px) {
@@ -1629,7 +1675,7 @@
                 font-size: 32px;
             }
             #callOverlay .call-name {
-                font-size: 22px;
+                font-size: 20px;
             }
             #callOverlay .call-actions button {
                 width: 54px;
@@ -1827,7 +1873,7 @@
                         </div>
                         <div class="settings-item" style="border-bottom: none; padding-bottom: 4px;">
                             <div class="left"><i class="fas fa-sign-out-alt" style="color: #f5576c;"></i> <span style="color: #f5576c;">Sign out</span></div>
-                            <div class="right"><span style="color: var(--text-muted); font-size: 13px;">v2.4.1</span></div>
+                            <div class="right"><span style="color: var(--text-muted); font-size: 13px;">v2.5.0</span></div>
                         </div>
                     </div>
                 </div>
@@ -1869,9 +1915,10 @@
                 <div id="callOverlay">
                     <div class="call-avatar" id="callAvatar">JD</div>
                     <div class="call-name" id="callName">John Doe</div>
-                    <div class="call-status" id="callStatus">Calling...</div>
+                    <div class="call-status" id="callStatus">Connecting...</div>
                     <div class="call-timer" id="callTimer">00:00</div>
                     <div class="call-actions">
+                        <button class="call-video-toggle" id="callVideoToggle" title="Toggle video"><i class="fas fa-video"></i></button>
                         <button class="call-mute" id="callMuteBtn" title="Mute"><i class="fas fa-microphone"></i></button>
                         <button class="call-end" id="callEndBtn" title="End call"><i class="fas fa-phone-slash"></i></button>
                     </div>
@@ -1909,6 +1956,8 @@
         let callSeconds = 0;
         let isCallActive = false;
         let isMuted = false;
+        let isVideoOn = true;
+        let callInProgress = false;
 
         // ============================================================
         //  DOM REFS
@@ -1987,6 +2036,7 @@
         const callTimer = document.getElementById('callTimer');
         const callMuteBtn = document.getElementById('callMuteBtn');
         const callEndBtn = document.getElementById('callEndBtn');
+        const callVideoToggle = document.getElementById('callVideoToggle');
 
         const toastContainer = document.getElementById('toast-container');
 
@@ -2067,9 +2117,7 @@
                     settings = JSON.parse(saved);
                 } catch (e) {}
             }
-            // Apply settings
             applyDarkMode(settings.darkMode);
-            // Update toggles
             darkModeToggle.classList.toggle('active', settings.darkMode);
             notifToggle.classList.toggle('active', settings.notifications);
             soundToggle.classList.toggle('active', settings.sound);
@@ -2096,14 +2144,9 @@
             saveSettings();
         }
 
-        function toggleDarkMode() {
-            applyDarkMode(!settings.darkMode);
-        }
-
         function toggleSetting(key) {
             settings[key] = !settings[key];
             saveSettings();
-            // Update toggle UI
             const toggleMap = {
                 darkMode: darkModeToggle,
                 notifications: notifToggle,
@@ -2125,6 +2168,10 @@
         //  CALL SYSTEM
         // ============================================================
         function startCall(contactId, isVideo = false) {
+            if (callInProgress) {
+                showToast('A call is already in progress.', 'error');
+                return;
+            }
             if (!contactId) {
                 showToast('Select a contact first.', 'error');
                 return;
@@ -2135,27 +2182,46 @@
                 return;
             }
 
-            // Show call overlay
+            // Reset call state
+            callInProgress = true;
+            isCallActive = false;
+            isMuted = false;
+            isVideoOn = isVideo;
+            if (callTimerInterval) {
+                clearInterval(callTimerInterval);
+                callTimerInterval = null;
+            }
+            callSeconds = 0;
+            callTimer.textContent = '00:00';
+
+            // Update UI
             callAvatar.textContent = contact.substring(0, 2).toUpperCase();
             callAvatar.style.background = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
             callName.textContent = contact;
-            callStatus.textContent = isVideo ? 'Video calling...' : 'Calling...';
-            callTimer.textContent = '00:00';
-            callSeconds = 0;
-            isMuted = false;
+            callStatus.textContent = 'Connecting...';
+            callStatus.className = 'call-status';
             callMuteBtn.classList.remove('muted');
             callMuteBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+            callVideoToggle.classList.remove('off');
+            callVideoToggle.innerHTML = isVideo ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+            if (!isVideo) callVideoToggle.classList.add('off');
+
             callOverlay.classList.add('open');
 
-            // Simulate connection after 2 seconds
-            setTimeout(() => {
+            // Simulate connection after 1.5-2.5 seconds
+            const connectDelay = 1500 + Math.random() * 1000;
+            const connectTimeout = setTimeout(() => {
                 if (callOverlay.classList.contains('open')) {
-                    callStatus.textContent = isVideo ? 'Video call in progress' : 'Call in progress';
-                    startCallTimer();
                     isCallActive = true;
+                    callStatus.textContent = isVideo ? 'Video call' : 'Voice call';
+                    callStatus.classList.add('connected');
+                    startCallTimer();
                     showToast(`Call connected with ${contact}`, 'success');
                 }
-            }, 2000);
+            }, connectDelay);
+
+            // Store timeout to clear if call ends early
+            callEndBtn._connectTimeout = connectTimeout;
         }
 
         function startCallTimer() {
@@ -2173,16 +2239,37 @@
                 clearInterval(callTimerInterval);
                 callTimerInterval = null;
             }
+            // Clear connection timeout if still pending
+            if (callEndBtn._connectTimeout) {
+                clearTimeout(callEndBtn._connectTimeout);
+                callEndBtn._connectTimeout = null;
+            }
             isCallActive = false;
+            callInProgress = false;
             callOverlay.classList.remove('open');
             showToast('Call ended', 'info');
         }
 
         function toggleMute() {
+            if (!isCallActive) {
+                showToast('Mute is only available during an active call.', 'error');
+                return;
+            }
             isMuted = !isMuted;
             callMuteBtn.classList.toggle('muted', isMuted);
             callMuteBtn.innerHTML = isMuted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
             showToast(isMuted ? 'Microphone muted' : 'Microphone unmuted', 'info');
+        }
+
+        function toggleVideo() {
+            if (!isCallActive) {
+                showToast('Video toggling is only available during an active call.', 'error');
+                return;
+            }
+            isVideoOn = !isVideoOn;
+            callVideoToggle.classList.toggle('off', !isVideoOn);
+            callVideoToggle.innerHTML = isVideoOn ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+            showToast(isVideoOn ? 'Video enabled' : 'Video disabled', 'info');
         }
 
         // ============================================================
@@ -2442,7 +2529,6 @@
 
             messagesContainer.insertBefore(fragment, typingEl);
 
-            // Click handler for file attachments
             document.querySelectorAll('.msg .file-attach').forEach(el => {
                 el.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -2492,7 +2578,7 @@
                 renderMessages();
                 scrollToBottom();
                 if (settings.sound) {
-                    // Could play a sound
+                    // Optional: play a sound effect
                 }
             } else {
                 apiCall('/api/messages/send', 'POST', messageData)
@@ -2625,7 +2711,6 @@
             if (e.target === settingsOverlay) closeSettings();
         });
 
-        // Toggle listeners
         darkModeToggle.addEventListener('click', () => toggleSetting('darkMode'));
         notifToggle.addEventListener('click', () => toggleSetting('notifications'));
         soundToggle.addEventListener('click', () => toggleSetting('sound'));
@@ -2694,8 +2779,10 @@
             dropdownMenu.classList.toggle('open');
         });
 
-        document.addEventListener('click', () => {
-            dropdownMenu.classList.remove('open');
+        document.addEventListener('click', (e) => {
+            if (!dropdownMenu.contains(e.target) && e.target !== moreOptionsBtn) {
+                dropdownMenu.classList.remove('open');
+            }
         });
 
         dropdownMenu.querySelectorAll('.dropdown-item').forEach(item => {
@@ -2751,6 +2838,7 @@
 
         callEndBtn.addEventListener('click', endCall);
         callMuteBtn.addEventListener('click', toggleMute);
+        callVideoToggle.addEventListener('click', toggleVideo);
 
         // Close call if overlay background clicked
         callOverlay.addEventListener('click', (e) => {
@@ -2830,6 +2918,7 @@
         logoutBtn.addEventListener('click', () => {
             if (socket) socket.disconnect();
             if (callTimerInterval) clearInterval(callTimerInterval);
+            if (callInProgress) endCall();
             currentUser = null;
             activeContactId = null;
             currentMessages = [];
@@ -2878,6 +2967,5 @@
 
         console.log('🚀 ChatVerse client ready for Render!');
     </script>
-
 </body>
 </html>
