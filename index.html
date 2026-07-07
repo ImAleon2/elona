@@ -1871,8 +1871,8 @@
                         <div class="dropdown-menu" id="dropdownMenu">
                             <button class="dropdown-item" data-action="clear"><i class="fas fa-trash-alt"></i> Clear chat</button>
                             <button class="dropdown-item" data-action="mute"><i class="fas fa-bell-slash"></i> Mute notifications</button>
-                            <button class="dropdown-item" data-action="block" class="danger"><i class="fas fa-ban"></i> Block user</button>
-                            <button class="dropdown-item" data-action="report" class="danger"><i class="fas fa-flag"></i> Report</button>
+                            <button class="dropdown-item danger" data-action="block"><i class="fas fa-ban"></i> Block user</button>
+                            <button class="dropdown-item danger" data-action="report"><i class="fas fa-flag"></i> Report</button>
                         </div>
                     </div>
                 </div>
@@ -2529,7 +2529,7 @@
                     return;
                 }
                 await apiCall('/api/login', 'POST', { username, password });
-                currentUser = { username };
+                currentUser = { username, contacts: [], chats: {} };
                 connectSocket(username);
                 await loadUserData();
                 showChatApp();
@@ -2603,6 +2603,10 @@
 
             // ---------- Messages ----------
             socket.on('new_message', (data) => {
+                // Store in cache
+                if (!currentUser.chats[data.from]) currentUser.chats[data.from] = [];
+                currentUser.chats[data.from].push(data.message);
+
                 if (data.from === activeContactId) {
                     currentMessages.push(data.message);
                     renderMessages();
@@ -2617,15 +2621,44 @@
             });
 
             socket.on('message_sent', (data) => {
-                // Message sent confirmation
+                // Optimistic message already added, nothing else needed
+                // But we can update the cache if needed
+                if (data.to && data.message) {
+                    if (!currentUser.chats[data.to]) currentUser.chats[data.to] = [];
+                    // Check if message already exists (avoid duplicates)
+                    const exists = currentUser.chats[data.to].some(m =>
+                        m.text === data.message.text &&
+                        m.time === data.message.time &&
+                        m.from === 'me'
+                    );
+                    if (!exists) {
+                        currentUser.chats[data.to].push(data.message);
+                    }
+                    if (data.to === activeContactId) {
+                        // Update currentMessages if needed
+                        const existsInCurrent = currentMessages.some(m =>
+                            m.text === data.message.text &&
+                            m.time === data.message.time &&
+                            m.from === 'me'
+                        );
+                        if (!existsInCurrent) {
+                            currentMessages.push(data.message);
+                            renderMessages();
+                            scrollToBottom();
+                        }
+                    }
+                }
             });
 
             // ---------- Chat Clear ----------
             socket.on('chat_cleared', (data) => {
                 if (data.contactId === activeContactId) {
                     currentMessages = [];
+                    if (currentUser.chats) currentUser.chats[activeContactId] = [];
                     renderMessages();
                     showToast('Chat cleared', 'info');
+                } else if (data.contactId && currentUser.chats) {
+                    currentUser.chats[data.contactId] = [];
                 }
                 loadUserData().then(() => renderContacts(searchInput.value));
             });
@@ -2722,29 +2755,26 @@
         //  FRIEND REQUEST TOAST
         // ============================================================
         function showFriendRequestToast(from) {
-            const actions = [
-                {
-                    id: 'accept',
-                    label: 'Accept',
-                    class: 'toast-accept',
-                    handler: () => {
-                        if (socket) {
-                            socket.emit('accept_friend_request', { username: currentUser.username, requester: from });
-                        }
-                    }
-                },
-                {
-                    id: 'decline',
-                    label: 'Decline',
-                    class: 'toast-decline',
-                    handler: () => {
-                        if (socket) {
-                            socket.emit('decline_friend_request', { username: currentUser.username, requester: from });
-                            showToast(`Declined friend request from ${from}`, 'info');
-                        }
+            const actions = [{
+                id: 'accept',
+                label: 'Accept',
+                class: 'toast-accept',
+                handler: () => {
+                    if (socket) {
+                        socket.emit('accept_friend_request', { username: currentUser.username, requester: from });
                     }
                 }
-            ];
+            }, {
+                id: 'decline',
+                label: 'Decline',
+                class: 'toast-decline',
+                handler: () => {
+                    if (socket) {
+                        socket.emit('decline_friend_request', { username: currentUser.username, requester: from });
+                        showToast(`Declined friend request from ${from}`, 'info');
+                    }
+                }
+            }];
             showToastWithActions(`Friend request from ${from}`, 'warning', actions, 15000);
         }
 
@@ -2758,6 +2788,8 @@
             if (!Array.isArray(currentUser.contacts)) {
                 currentUser.contacts = [];
             }
+            // Initialize chats cache if not exists
+            if (!currentUser.chats) currentUser.chats = {};
         }
 
         async function loadChat(contactId) {
@@ -2765,6 +2797,10 @@
             try {
                 const data = await apiCall(`/api/messages/${currentUser.username}/${contactId}`);
                 currentMessages = data.messages || [];
+                // Store in cache
+                if (!currentUser.chats) currentUser.chats = {};
+                currentUser.chats[contactId] = currentMessages;
+
                 const contact = currentUser.contacts.find(c => c === contactId);
                 if (contact) {
                     chatName.textContent = contact;
@@ -2812,9 +2848,25 @@
                 return;
             }
 
+            // Ensure chats cache exists
+            if (!currentUser.chats) currentUser.chats = {};
+
             contactListEl.innerHTML = filtered.map(contact => {
                 const initials = contact.substring(0, 2).toUpperCase();
                 const color = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+
+                // Get last message for preview
+                const messages = currentUser.chats[contact] || [];
+                const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
+                let previewText = 'Start chatting';
+                if (lastMsg) {
+                    if (lastMsg.text) {
+                        previewText = lastMsg.text.substring(0, 30) + (lastMsg.text.length > 30 ? '...' : '');
+                    } else if (lastMsg.file) {
+                        previewText = '📎 ' + lastMsg.file.name;
+                    }
+                }
+
                 return `
                     <div class="contact-item ${contact === activeContactId ? 'active' : ''}" data-id="${contact}">
                         <div class="avatar" style="background: ${color};">
@@ -2823,7 +2875,7 @@
                         </div>
                         <div class="info">
                             <div class="name">${contact}</div>
-                            <div class="preview">${currentUser.chats?.[contact]?.length > 0 ? 'Last message' : 'Start chatting'}</div>
+                            <div class="preview">${previewText}</div>
                         </div>
                         <div class="meta">
                             <span class="time"></span>
@@ -2878,6 +2930,7 @@
 
             currentMessages.forEach((msg) => {
                 const div = document.createElement('div');
+                // 'me' = sent by current user, 'them' = received from contact
                 const isMe = msg.from === 'me';
                 div.className = `msg ${isMe ? 'sent' : 'received'}`;
 
@@ -2946,16 +2999,20 @@
                 file: hasFile ? { name: attachedFile.name, size: attachedFile.size, type: attachedFile.type } : null
             };
 
+            const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const optimisticMsg = {
+                from: 'me',
+                text: text || '',
+                file: messageData.file,
+                time: now
+            };
+
             if (socket) {
                 socket.emit('send_message', messageData);
-                const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                const optimisticMsg = {
-                    from: 'me',
-                    text: text || '',
-                    file: messageData.file,
-                    time: now
-                };
+                // Optimistic update
                 currentMessages.push(optimisticMsg);
+                if (!currentUser.chats[activeContactId]) currentUser.chats[activeContactId] = [];
+                currentUser.chats[activeContactId].push(optimisticMsg);
                 renderMessages();
                 scrollToBottom();
             } else {
@@ -3176,7 +3233,9 @@
                             if (activeContactId && socket) {
                                 socket.emit('clear_chat', { username: currentUser.username, contactId: activeContactId });
                                 currentMessages = [];
+                                if (currentUser.chats) currentUser.chats[activeContactId] = [];
                                 renderMessages();
+                                renderContacts(searchInput.value);
                                 showToast('Chat cleared', 'success');
                             }
                         }
