@@ -1,7 +1,7 @@
 {
   "name": "chatverse-server",
   "version": "1.0.0",
-  "description": "Trial server for ChatVerse",
+  "description": "ChatVerse server for Render",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

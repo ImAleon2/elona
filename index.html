@@ -1668,12 +1668,6 @@
 
     <script>
         // ============================================================
-        //  SERVER CONFIG
-        // ============================================================
-        const SERVER_URL = 'http://localhost:3000';
-        let socket = null;
-
-        // ============================================================
         //  STATE
         // ============================================================
         let currentUser = null;
@@ -1682,6 +1676,7 @@
         let attachedFile = null;
         let isAuthMode = 'login';
         let typingTimeout = null;
+        let socket = null;
 
         // ============================================================
         //  DOM REFS
@@ -1787,7 +1782,7 @@
         }];
 
         // ============================================================
-        //  API HELPERS
+        //  API HELPER (relative paths)
         // ============================================================
         async function apiCall(endpoint, method = 'GET', body = null) {
             const options = {
@@ -1795,7 +1790,7 @@
                 headers: { 'Content-Type': 'application/json' },
             };
             if (body) options.body = JSON.stringify(body);
-            const res = await fetch(`${SERVER_URL}${endpoint}`, options);
+            const res = await fetch(endpoint, options);
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Server error');
             return data;
@@ -1840,11 +1835,8 @@
             try {
                 if (isAuthMode === 'register') {
                     await apiCall('/api/register', 'POST', { username, password });
-                    // After registration, auto-login
                 }
-                // Login
                 await apiCall('/api/login', 'POST', { username, password });
-                // Success
                 currentUser = { username };
                 connectSocket(username);
                 await loadUserData();
@@ -1874,28 +1866,21 @@
         //  SOCKET.IO
         // ============================================================
         function connectSocket(username) {
-            if (socket) {
-                socket.disconnect();
-            }
-            socket = io(SERVER_URL);
+            if (socket) socket.disconnect();
+            socket = io(); // connects to same origin
             socket.on('connect', () => {
                 console.log('Socket connected');
                 socket.emit('join', username);
             });
             socket.on('new_message', (data) => {
-                // data: { from, message }
                 if (data.from === activeContactId) {
                     currentMessages.push(data.message);
                     renderMessages();
                     scrollToBottom();
                 }
-                // Refresh contact list preview
                 loadUserData().then(() => {
                     renderContacts(searchInput.value);
                 });
-            });
-            socket.on('message_sent', (data) => {
-                // Optional: update UI if needed
             });
             socket.on('disconnect', () => {
                 console.log('Socket disconnected');
@@ -1909,7 +1894,6 @@
             if (!currentUser) return;
             const data = await apiCall(`/api/contacts/${currentUser.username}`);
             currentUser.contacts = data.contacts || [];
-            // Ensure contact list is an array
             if (!Array.isArray(currentUser.contacts)) {
                 currentUser.contacts = [];
             }
@@ -2000,7 +1984,7 @@
         }
 
         // ============================================================
-        //  LINKIFY TEXT
+        //  LINKIFY
         // ============================================================
         function linkify(text) {
             if (!text) return '';
@@ -2102,10 +2086,8 @@
                 file: hasFile ? { name: attachedFile.name, size: attachedFile.size, type: attachedFile.type } : null
             };
 
-            // Send via socket
             if (socket) {
                 socket.emit('send_message', messageData);
-                // Optimistically add message to UI
                 const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 const optimisticMsg = {
                     from: 'me',
@@ -2117,16 +2099,11 @@
                 renderMessages();
                 scrollToBottom();
             } else {
-                // Fallback to REST
                 apiCall('/api/messages/send', 'POST', messageData)
-                    .then(() => {
-                        // Reload chat
-                        loadChat(activeContactId);
-                    })
+                    .then(() => loadChat(activeContactId))
                     .catch(err => alert('Failed to send: ' + err.message));
             }
 
-            // Clear input
             attachedFile = null;
             attachmentPreview.classList.remove('show');
             msgInput.value = '';
@@ -2335,7 +2312,6 @@
                             if (activeContactId) {
                                 currentMessages = [];
                                 renderMessages();
-                                // We need to clear on server too - we'll just reload
                                 loadChat(activeContactId);
                             }
                         }
@@ -2476,15 +2452,11 @@
         // ============================================================
         //  INIT
         // ============================================================
-        // Build emoji picker
         buildEmojiPicker();
-
-        // Start with auth screen
         showAuthScreen();
         setAuthMode('login');
 
-        console.log('🚀 ChatVerse client ready! Connect to server at ' + SERVER_URL);
+        console.log('🚀 ChatVerse client ready for Render!');
     </script>
-
 </body>
 </html>
